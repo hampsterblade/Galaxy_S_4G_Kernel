@@ -20,7 +20,7 @@ cp ./arch/arm/boot/zImage ../oczImage
 echo Cleaning old build
 ./build.sh -clean 2>&1 >>../build.log | tee -a ../error.log
 echo Doing nonOC config
-./build.sh -config 2>&1 >>../build.log | tee -a ../error.log
+./build.sh -config2 2>&1 >>../build.log | tee -a ../error.log
 echo Building nonOC Kernel
 ./build.sh 2>&1 >>../build.log | tee -a ../error.log
 cp ./arch/arm/boot/zImage ../zImage
