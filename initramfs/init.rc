@@ -792,7 +792,7 @@ service media /system/bin/mediaserver
     ioprio rt 4
 
 
-service samsungani /sbin/bootanimation.sh
+service bootanim /sbin/bootanimation.sh
     user graphics
     group graphics
     disabled
@@ -912,4 +912,4 @@ service agpsd /system/bin/agpsd
      oneshot
 
 on property:sys.boot_completed=1
-    stop samsungani
+    stop bootanim
