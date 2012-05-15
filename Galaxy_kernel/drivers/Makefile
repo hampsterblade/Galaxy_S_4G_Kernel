@@ -114,5 +114,4 @@ obj-$(CONFIG_VLYNQ)		+= vlynq/
 obj-$(CONFIG_STAGING)		+= staging/
 obj-y				+= platform/
 obj-y				+= ieee802154/
-obj-y				+= level/
 obj-$(CONFIG_TINY_FSR)		+= tfsr/
