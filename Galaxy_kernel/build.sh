@@ -1,36 +1,8 @@
 #!/bin/bash
 
-# AntonX
+CROSS_COMPILE=../arm-eabi-4.4.3/bin/arm-eabi-
 
-# Before building, create kernel config by executing command:
-# $./build.sh -config
-
-# Use "$./build.sh -clean" to kill old .o
-
-# you can modify these to your locations of tooolchain and initramfs
-
-DEFAULT_CROSS_COMPILE=../arm-eabi-4.4.3/bin/arm-eabi-
-
-DEFAULT_INITRAMFS=../initramfs
-
-# check the toolchain
-
-if [ ! -e ${CROSS_COMPILE}gcc ] ; then # export variable is not set; try our own
-  CROSS_COMPILE=$DEFAULT_CROSS_COMPILE
-fi
-
-if [ ! -e ${CROSS_COMPILE}gcc ] ; then
-  echo "!!! Toolchain not found. Use:"
-  echo "!!!   \$git clone https://android.googlesource.com/platform/prebuilt"
-  echo "!!!   \$export CROSS_COMPILE=\"Your_Toolchain_Location/bin/arm-eabi-\""
-  exit 0
-fi
-
-# check initramfs
-
-  INITRAMFS=$DEFAULT_INITRAMFS
-
-# 
+INITRAMFS=../initramfs
 
 CPU_NUMBER=`grep 'processor' /proc/cpuinfo | wc -l`
 
@@ -62,6 +34,7 @@ if [ "$1" == "-clean" ] ; then
   rm $(find $BUILD_DIR -name '*.bak') > /dev/null 2>&1
   rm $(find $BUILD_DIR -name '*.old') > /dev/null 2>&1
   rm $(find $BUILD_DIR -name '*.tmp') > /dev/null 2>&1
+  rm -rf $TMP_INITRAMFS
   exit 0
 fi
 
