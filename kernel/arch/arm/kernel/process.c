@@ -36,6 +36,11 @@
 #include <asm/stacktrace.h>
 #include <asm/mach/time.h>
 
+#ifdef CONFIG_KERNEL_DEBUG_SEC
+#include <linux/kernel_sec_common.h>
+struct pt_regs kernel_sec_core_ureg_dump;
+#endif
+
 static const char *processor_modes[] = {
   "USER_26", "FIQ_26" , "IRQ_26" , "SVC_26" , "UK4_26" , "UK5_26" , "UK6_26" , "UK7_26" ,
   "UK8_26" , "UK9_26" , "UK10_26", "UK11_26", "UK12_26", "UK13_26", "UK14_26", "UK15_26",
@@ -95,6 +100,14 @@ void arm_machine_restart(char mode, const char *cmd)
 	 * soft boot works.
 	 */
 	setup_mm_for_reboot(mode);
+
+#if 1
+#ifdef CONFIG_KERNEL_DEBUG_SEC
+	/* Clear the magic number because it's normal reboot */
+	kernel_sec_clear_upload_magic_number();
+#endif
+	writel(0x12345678, S5P_INFORM5);  /* Reset */
+#endif
 
 	/*
 	 * Now call the architecture specific reboot code.
@@ -302,6 +315,15 @@ void __show_regs(struct pt_regs *regs)
 		regs->ARM_r3, regs->ARM_r2,
 		regs->ARM_r1, regs->ARM_r0);
 
+#ifdef CONFIG_KERNEL_DEBUG_SEC	
+	/*
+	 *  Overwrite SVC context which the error just occurs from regs
+	 * (tkHWANG)
+	 */
+	memcpy((void*)&kernel_sec_core_ureg_dump, (void*)(regs),
+			sizeof(kernel_sec_core_ureg_dump));
+#endif		
+	
 	flags = regs->ARM_cpsr;
 	buf[0] = flags & PSR_N_BIT ? 'N' : 'n';
 	buf[1] = flags & PSR_Z_BIT ? 'Z' : 'z';

@@ -130,7 +130,32 @@ static inline int _get_checkbit(struct onedram *od);
 #endif
 
 #if defined (CONFIG_CP_CHIPSET_STE)
+#if defined(CONFIG_KERNEL_DEBUG_SEC) 
+#include <linux/kernel_sec_common.h>
+#define ERRMSG "CP H/W watchdog Crash"
+static char cp_errmsg[65];
+static void _cp_watchdog_dump(void);
+#else
 #define _cp_watchdog_dump() do { } while(0)
+#endif
+
+#if defined(CONFIG_KERNEL_DEBUG_SEC) 
+static void _cp_watchdog_dump(void)
+{
+	t_kernel_sec_mmu_info mmu_info;
+
+	memset(cp_errmsg, 0, sizeof(cp_errmsg));
+
+	strcpy(cp_errmsg, ERRMSG);
+
+	printk("\nCP Dump Cause - %s\n", cp_errmsg);
+
+	kernel_sec_set_upload_magic_number();
+	kernel_sec_get_mmu_reg_dump(&mmu_info);
+	kernel_sec_set_upload_cause(UPLOAD_CAUSE_CP_ERROR_FATAL);
+	kernel_sec_hw_reset(false);
+}
+#endif
 #endif
 static DEFINE_SPINLOCK(onedram_lock);
 
@@ -756,6 +781,12 @@ static ssize_t onedram_read(struct file *filp, char __user *buf,
 		schedule();
 	}
 
+	#if defined (CONFIG_CP_CHIPSET_STE)
+	#if defined(CONFIG_KERNEL_DEBUG_SEC) 
+	if(data == 0xabcd00c9)
+		_cp_watchdog_dump();
+	#endif
+	#endif
 	retval = put_user(data, (u32 __user *)buf);
 	if (!retval)
 		retval = sizeof(u32);

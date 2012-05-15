@@ -40,7 +40,14 @@
 
 #include "../onedram/onedram.h"
 
+#if defined(CONFIG_KERNEL_DEBUG_SEC)
+#include <linux/kernel_sec_common.h>
+#define ERRMSG "Unknown CP Crash"
+static char cp_errmsg[65];
+static void _go_dump(struct sipc *si);
+#else
 #define _go_dump(si) do { } while(0)
+#endif
 
 #if defined(NOISY_DEBUG)
 static struct device *_dev;
@@ -443,6 +450,13 @@ void sipc_handler(u32 mailbox, void *data)
 		return;
 
 	dev_dbg(&si->svndev->dev, "recv mailbox %x\n", mailbox);
+
+#if defined(CONFIG_KERNEL_DEBUG_SEC)
+	if (mailbox == KERNEL_SEC_DUMP_AP_DEAD_ACK) {
+		// deal ack for ap crash that indicated to cp
+		kernel_sec_set_cp_ack();
+	}
+#endif
 
 	if ((mailbox & MB_VALID) == 0) {
 		dev_err(&si->svndev->dev, "Invalid mailbox message: %x\n", mailbox);
@@ -2116,5 +2130,39 @@ static ssize_t store_resume(struct device *d,
 
 void sipc_ramdump(struct sipc *si)
 {
+#if defined(CONFIG_KERNEL_DEBUG_SEC)
+	/* silent reset at debug level low */
+	if ( kernel_sec_get_debug_level() == KERNEL_SEC_DEBUG_LEVEL_LOW )
+		return;
+#endif
 	_go_dump(si);
 }
+
+#if defined(CONFIG_KERNEL_DEBUG_SEC)
+static void _go_dump(struct sipc *si)
+{
+	int r;
+	t_kernel_sec_mmu_info mmu_info;
+
+	memset(cp_errmsg, 0, sizeof(cp_errmsg));
+
+	r = _get_auth();
+	if (r)
+		strcpy(cp_errmsg, ERRMSG);
+	else {
+		char *p;
+		p = (char *)si->map + FATAL_DISP;
+		memcpy(cp_errmsg, p, sizeof(cp_errmsg));
+	}
+
+	printk("CP Dump Cause - %s\n", cp_errmsg);
+
+//	kernel_sec_set_cause_strptr(cp_errmsg, sizeof(cp_errmsg));
+	kernel_sec_set_upload_magic_number();
+	kernel_sec_get_mmu_reg_dump(&mmu_info);
+	kernel_sec_set_upload_cause(UPLOAD_CAUSE_CP_ERROR_FATAL);
+	kernel_sec_hw_reset(false);
+
+	// Never Return!!!
+}
+#endif
