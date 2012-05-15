@@ -143,9 +143,6 @@
 #include <linux/mfd/max8998.h>
 #include <linux/switch.h>
 
-#ifdef CONFIG_KERNEL_DEBUG_SEC
-#include <linux/kernel_sec_common.h>
-#endif
 
 #if defined(CONFIG_S5PC110_DEMPSEY_BOARD)
 #include <linux/input/k3g.h>
@@ -6883,8 +6880,7 @@ static void aries_power_off(void)
 	char reset_mode = 'r';
 	int phone_wait_cnt = 0;
 
-	/* Change this API call just before power-off to take the dump. */
-	/* kernel_sec_clear_upload_magic_number(); */
+
 #if defined (CONFIG_S5PC110_DEMPSEY_BOARD)
 	touchkey_ldo_on(0);
 #endif
@@ -7030,14 +7026,11 @@ static void aries_power_off(void)
 
 			if (sec_set_param_value)
 				sec_set_param_value(__REBOOT_MODE, &mode);
-			kernel_sec_clear_upload_magic_number();
-			kernel_sec_hw_reset(1);
 			arch_reset('r', NULL);
 			pr_crit("%s: waiting for reset!\n", __func__);
 			while (1);
 		}
 
-		kernel_sec_clear_upload_magic_number();
 
 #if defined(CONFIG_S5PC110_HAWK_BOARD)
 		touch_led_on(false); // Turn off KEY LED.

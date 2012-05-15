@@ -28,7 +28,7 @@
 #include <linux/tick.h>
 #include <linux/utsname.h>
 #include <linux/uaccess.h>
-
+#include <mach/regs-clock.h>
 #include <asm/leds.h>
 #include <asm/processor.h>
 #include <asm/system.h>
@@ -95,6 +95,7 @@ void arm_machine_restart(char mode, const char *cmd)
 	 * soft boot works.
 	 */
 	setup_mm_for_reboot(mode);
+	writel(0x12345678, S5P_INFORM5);  /* Reset */
 
 	/*
 	 * Now call the architecture specific reboot code.
