@@ -110,7 +110,7 @@ loglevel 3
     insmod /lib/modules/Si4709_driver.ko
 
     # ko files for vibrator
-    insmod /lib/modules/vibrator.ko
+    # insmod /lib/modules/vibrator.ko
 
     # ko files for bthid
     insmod /lib/modules/bthid.ko

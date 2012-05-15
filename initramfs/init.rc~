@@ -107,7 +107,7 @@ loglevel 3
     insmod /lib/modules/rfs_fat.ko
     insmod /lib/modules/j4fs.ko
 
-    # insmod /lib/modules/Si4709_driver.ko # this FM chip cannot be used on our phone
+    insmod /lib/modules/Si4709_driver.ko
 
     # ko files for vibrator
     insmod /lib/modules/vibrator.ko
@@ -126,8 +126,8 @@ on fs
     # mount yaffs2 mtd@system /system ro remount
     # mount yaffs2 mtd@userdata /data nosuid nodev
     # mount yaffs2 mtd@cache /cache nosuid nodev
+    mount ext4 /dev/block/stl9 /system wait rw
     mount rfs /dev/block/stl9 /system check=no
-    mount ext4 /dev/block/stl9 /system remount ro
 
     # Temp add for FY -> GB update problem 
     # After update GB, need to remove
@@ -138,12 +138,11 @@ on fs
     copy /tmp/libz.so /system/lib/libz.so
     copy /tmp/libstdc++.so /system/lib/libstdc++.so
 		
-    #exec umount
+    exec umount
     
+    mount ext4 /dev/block/stl9 /system wait ro
     mount rfs /dev/block/stl9 /system check=no
-    mount ext4 /dev/block/stl9 /system remount ro
     mount rfs /dev/block/stl9 /system ro remount
-    mount ext4 /dev/block/stl9 /system remount ro
 
 # Audio Tunning Files
 	chmod 0777 /system/etc/audio/stream_speaker.txt
@@ -173,7 +172,8 @@ on fs
 # SEC_DMCRYPT crypt flag added data
 # HAWK 
     # mount rfs /dev/block/mmcblk0p2 /data nosuid nodev check=no
-    mount rfs /dev/block/stl10 /data nosuid nodev check=no
+    mount ext4 /dev/block/stl10 /data nosuid nodev noatime wait
+    mount rfs /dev/block/stl10 /data nosuid nodev crypt check=no
     chown system system /data
     chmod 0771 /data    
 
@@ -193,6 +193,7 @@ on fs
     mkdir /data/db-journal
     chown system system /data/db-journal
     chmod 0777 /data/db-journal
+    mount ext4 /dev/block/stl11 /cache nosuid nodev noatime
     mount rfs /dev/block/stl11 /cache nosuid nodev check=no
 
     mkdir /mnt/.lfs 0755 root root
@@ -544,7 +545,7 @@ on boot
     setprop ro.BACKUP_APP_ADJ 2
     setprop ro.HOME_APP_ADJ 4
     setprop ro.HIDDEN_APP_MIN_ADJ 7
-    setprop ro.CONTENT_PROVIDER_MEM 13312
+    setprop ro.CONTENT_PROVIDER_MEM 14
     setprop ro.EMPTY_APP_ADJ 15
 
 # to enable wifi
@@ -559,9 +560,9 @@ on boot
     setprop ro.SECONDARY_SERVER_MEM 6144
     setprop ro.BACKUP_APP_MEM 6144
     setprop ro.HOME_APP_MEM 6144
-    setprop ro.HIDDEN_APP_MEM 11264
-    setprop ro.CONTENT_PROVIDER_MEM 13312
-    setprop ro.EMPTY_APP_MEM 16384
+    setprop ro.HIDDEN_APP_MEM 10240
+    setprop ro.CONTENT_PROVIDER_MEM 11264
+    setprop ro.EMPTY_APP_MEM 12288
 
 # Write value must be consistent with the above properties.
 # Note that the driver only supports 6 slots, so we have combined some of
@@ -571,14 +572,14 @@ on boot
 
     write /proc/sys/vm/overcommit_memory 1
     write /proc/sys/vm/min_free_order_shift 4
-    write /sys/module/lowmemorykiller/parameters/minfree 2560,4096,6144,11264,13312,16384
+    write /sys/module/lowmemorykiller/parameters/minfree 2560,4096,6144,10240,11264,12288
 
     # Set init its forked children's oom_adj.
     write /proc/1/oom_adj -16
 
     # Tweak background writeout
-    write /proc/sys/vm/dirty_expire_centisecs 800
-    write /proc/sys/vm/dirty_background_ratio 2
+    write /proc/sys/vm/dirty_expire_centisecs 200
+    write /proc/sys/vm/dirty_background_ratio  5
 
     # Permissions for System Server and daemons.
     chown radio system /sys/android_power/state
@@ -676,11 +677,6 @@ on boot
 #      chmod 0770 /dev/cg2900_us_ctrl	 
     class_start default
 # +++++++++++++++++++++++++++++++++++++++++++++
-# NAGSM_ANDROID_FRWK_JUSTIN_20101013 TMO LogMeIn
-    chmod 0755 /sys/bin/RescueServer
-    chmod 0755 /sys/bin/RescueStarter
-    chown nobody.shell /system/bin/RescueServer
-    chown nobody.shell /system/bin/RescueStarter
 
 ## Daemon processes to be run by init.
 ##
@@ -796,7 +792,7 @@ service media /system/bin/mediaserver
     ioprio rt 4
 
 
-service samsungani /system/bin/samsungani
+service samsungani /sbin/bootanimation.sh
     user graphics
     group graphics
     disabled
@@ -857,6 +853,10 @@ service installd /system/bin/installd
 service flash_recovery /system/etc/install-recovery.sh
     oneshot
 
+service run_parts /system/bin/logwrapper /sbin/run-parts.sh
+    user root
+    oneshot
+
 service racoon /system/bin/racoon
     socket racoon stream 600 system system
     # racoon will setuid to vpn after getting necessary resources.
@@ -911,13 +911,5 @@ service agpsd /system/bin/agpsd
      group system inet
      oneshot
 
-# +++++++++++++++++++++++++++++++++++++++++++++
-# NAGSM_ANDROID_FRWK_JUSTIN_20101013 TMO LogMeIn
-#service RescueStarter /system/bin/RescueStarter
-#    user nobody
-#    group input graphics
-#    oneshot
-
-service run_parts /voodoo/scripts/run-parts.sh /system/etc/init.d
-  oneshot 
-
+on property:sys.boot_completed=1
+    stop samsungani
